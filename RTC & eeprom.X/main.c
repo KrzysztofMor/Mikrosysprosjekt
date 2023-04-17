@@ -6,6 +6,7 @@
  */
 #define F_CPU 4000000UL
 #include <avr/io.h>
+#include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include "usart.h"
 #include <util/delay.h>
@@ -16,29 +17,24 @@
 
 
 
-
 int main() {
-    USART3_init(); 
+    USART3_init();
+    PORTB_DIRCLR = PIN2_bm;
     RTC_init();
+    fan_memory();
     sei();
-    char x = 0;
-    char y = 0;
-    char z = 0;
+
     while(1){
-        if(delayTime(1) == true){
-        printf("T: %u\n", z);    
-        printf("M: %u\n", y);
-        printf("S: %u", x);
-        x++;
-        if(x > 59){
-            y++;
-            x = 0;
+        uint8_t x = get_runtime_fan(0);
+        printf("fan1: %u\n", x);
+        _delay_ms(1000);
+        
+        //reset_fan_runtime(0);         //Reset fancount when fan is replaced
+        
+        if (!(PORTC.IN & (PIN2_bm))) {
+        //    reset_fan_runtime(0);
         }
-        if(y > 59){
-            z++;
-            y = 0;
-            x = 0;
-        }
-        }    
     }
+    
+    
 }
