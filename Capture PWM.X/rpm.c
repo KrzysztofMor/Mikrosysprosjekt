@@ -44,22 +44,23 @@ void countPWM_TCB0(){
 }
 
 uint32_t readRPM(){
-    uint16_t  rpm;
-    float T = period/700000.0;//(1 / 20000000.0); 800000.0
-
+    uint16_t rpm;
     while(1){
         period = TCB0.CNT;
         p_Duty = TCB0_CCMP;        
         n_Duty = period - p_Duty;
-        rpm = (60 / T) * (1 - (n_Duty / (float)p_Duty));
-    
-        if (T > shortperiod){
+        float T = (float)period/690000.0;//690000.0;//700000;//700000.0;//(1 / 20000000.0); 800000.0
+        float duty_cycle = (float)n_Duty/(float)period;
+
+        rpm = (60.0 / T) * (1.0 - duty_cycle);
+        
+        if (period > shortperiod){
             break;
         }
         else{
             continue;
         }
-    }
+    }   
     return rpm;
 }
 
