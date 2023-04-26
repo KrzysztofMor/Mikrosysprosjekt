@@ -16,30 +16,23 @@
 #include <stdbool.h>
 #include "usart.h"
 #include "adc.h"
-#include "TMP36gz.h"
-
-#define DATA_SIZE 8
-volatile uint8_t data_buffer[DATA_SIZE];
-volatile uint8_t buffer_index = 0;
-volatile bool was_read = false;
-volatile bool data_ready = false;
-volatile uint8_t current_cnt;
 
 
 int main(void) {
-    ADC0_init(3);                            //Aktiverer ADC for portD. Velg hvilken inngang mux skal tilkobles til
-    USART3_init();                          //Aktiverer Serial connection over PB0 og PB1 
+    ADC0_init(3);   //Activates ADC on port D with initialized pin
+    USART3_init();  //Activates serial connection over PB0 and PB1
 	
-    sei();
+	sei();
     
     while(1){
-        uint16_t adcVal = ADC0_read();
-        uint16_t TemperaturRead = temperaturC(adcVal, 0);
-        printf("Grader:%d\r\n",TemperaturRead);
-        uint16_t analogValue = analogTempvalue(TemperaturRead, 0, 23);        //Temperatur, minimum, maximum
+        uint16_t adcVal = ADC0_read();  //Reads Analog value on input
+        uint16_t TemperaturRead = temperaturC(adcVal, 0);   //converts A-value to temperature
+        //printf("Grader:%d\r\n",TemperaturRead);
+        uint16_t analogValue = analogTempvalue(TemperaturRead, 0, 23);  //Converts Temperatur to analog value with minimum and maximum range.
         printf("PWM:%d\r\n",analogValue);
         _delay_ms(1000);                          //Litt venting før neste verdi blir sendt 
         
+    }
 }
 
 
