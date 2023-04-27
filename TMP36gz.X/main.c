@@ -26,7 +26,7 @@ int main(void) {
     while(1){
         uint16_t temp = readADC(0, 20, 100) //PD pin, min temp, max temp   
         printf("PWM:%d\r\n",temp);
-        _delay_ms(1000);                          //Litt venting før neste verdi blir sendt 
+        _delay_ms(1000); 
         
     }
 }
