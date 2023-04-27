@@ -1,0 +1,168 @@
+void PWM(){
+    //Velger pin out
+    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Setter PD0, PD1 og PD2 som utganger
+    PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm;// Setter PC6, PC5 og PC4 som utganger
+    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // Slår på PWM-output på Port D og C
+    
+    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på PWM pin 2 på Port D og PWM pin 0 og 1 på Port D, setter timeren i singelslope mode
+    TCA1.SINGLE.CTRLB = TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc;
+    //Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
+	
+	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // Slår på timeren med pre-scaler satt til 1
+	TCA1.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;// Slår på timeren med pre-scaler satt til 1
+	}
+}
+
+void PWM_total(const char* command){
+	switch(vifte){
+		default: 
+		printf("Choose which fan you want to control, commando FAN0 -> 5");
+		if (strcmp(command, "FAN0") == 0) {
+			printf("Choose manually the strength of fan 0 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 1;
+		}
+		else if (strcmp(command, "FAN1") == 0) {
+			printf("Choose manually the strength of fan 1 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 2;
+		}
+		else if (strcmp(command, "FAN2") == 0) {
+			printf("Choose manually the strength of fan 2 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 3;
+		}
+		else if (strcmp(command, "FAN3") == 0) {
+			printf("Choose manually the strength of fan 3 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 4;
+		}
+		else if (strcmp(command, "FAN4") == 0) {
+			printf("Choose manually the strength of fan 4 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 5;
+		}
+		else if (strcmp(command, "FAN5") == 0) {
+			printf("Choose manually the strength of fan 5 using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			fan_lvl = 6;
+		}
+		else
+		{
+			USART_sendString("Invalid command\r\n");
+		}
+		case 1: 
+		if (fan_lvl == 1) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA0.SINGLE.CMP2 = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 0 Power HIGH\r\n");	
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP2 = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 0 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP2 = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 0 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+		break;
+		
+		case 2:
+		if (fan_lvl == 2) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 1 Power HIGH\r\n");
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 1 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP1 = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 1 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}	 
+		break;
+		
+		case 3:
+		if (fan_lvl == 3) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 2 Power HIGH\r\n");
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 2 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP0 = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 2 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+		break;
+		
+		case 4:
+		if (fan_lvl == 4) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 3 Power HIGH\r\n");
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 3 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP0BUF = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 3 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+		break;
+		
+		case 5:
+		if (fan_lvl == 5) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 4 Power HIGH\r\n");
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 4 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP1BUF = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 4 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+		break;
+		
+		case 6:
+		if (fan_lvl == 6) {
+			if (strcmp(command, "HIGH") == 0) {
+				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle på PD2
+				USART_sendString("Fan 5 Power HIGH\r\n");
+			}
+			else if (strcmp(command, "MEDIUM") == 0) {
+				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PD2
+				USART_sendString("Fan 5 Power MEDIUM\r\n");
+			}
+			else if (strcmp(command, "LOW") == 0) {
+				TCA0.SINGLE.CMP2BUF = 0x9F/20; // Duty cycle på PD2
+				USART_sendString("Fan 5 Power LOW\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+		break;
+	}	
+}
