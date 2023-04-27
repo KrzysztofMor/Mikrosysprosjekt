@@ -1,9 +1,9 @@
-void PWM_out() {
-	TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PD2
-	TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PD2
-	TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PD2
+void PWM_out(uint16_t duty) {
+	TCA0.SINGLE.CMP2BUF = 0x9F/8; = duty // Duty cycle på PD2
+	TCA0.SINGLE.CMP1BUF = 0x9F/8; = duty // Duty cycle på PD2
+	TCA0.SINGLE.CMP0BUF = 0x9F/8; = duty// Duty cycle på PD2
 	
-	TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD2
-	TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD2
-	TCA0.SINGLE.CMP2 = 0x9F/8; // Duty cycle på PD2	
+	TCA0.SINGLE.CMP0 = 0x9F/8; = duty // Duty cycle på PD2
+	TCA0.SINGLE.CMP1 = 0x9F/8; = duty // Duty cycle på PD2
+	TCA0.SINGLE.CMP2 = 0x9F/8; = duty // Duty cycle på PD2	
 }
