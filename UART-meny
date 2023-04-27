@@ -1,0 +1,261 @@
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include <avr/interrupt.h>
+#define F_CPU 4000000UL
+#include <stdbool.h>
+#include "rpm.h"
+#include "RTC.h"
+#include "TMP36gz.h"
+
+#define USART_BAUDRATE(BAUD_RATE) ((float)(64 * F_CPU / (16 * (float)BAUD_RATE)) + 0.5)
+#define CMD_MAX_SIZE 15
+
+static void USART_init(void);
+static void USART_sendChar(char c);
+static void USART_sendString(const char* str);
+static uint8_t USART_read(void);
+static void executeCommand(const char* command);
+
+static FILE USART_stream = FDEV_SETUP_STREAM(USART_sendChar, NULL, _FDEV_SETUP_WRITE);
+uint16_t temperaturC(uint16_t temp, uint8_t tempScale);
+int level = 0;
+
+int main(void)
+{ 
+    read_fantemperature(0);
+	fan_memory();
+	PORTE.DIRSET = 0b00000011; 
+	const int maxVal = 15; // Maximum length for input
+	char command[CMD_MAX_SIZE] = {0};
+	RTC_init();
+	uint8_t index = 0;
+	void PWM();
+	USART_init();
+	_delay_ms(10);
+	executeCommand(command);
+	while (1)
+	{
+		const char c = (char) USART_read();
+
+		if (c != '\r' && c != '\n')
+		{
+			if (index < maxVal)
+			{
+				command[index++] = c;
+			}
+			else
+			{
+				USART_sendString("Input too long\r\n");
+				index = 0;
+			}
+		}
+
+		if (c == '\n')
+		{
+			command[index] = '\0';
+			index = 0;
+			executeCommand(command);
+		}
+	}
+}
+
+static void USART_init(void)
+{
+	PORTB.DIRCLR = PIN1_bm;
+	PORTB.DIRSET = PIN0_bm;
+	USART3.BAUD = (uint16_t)USART_BAUDRATE(9600);
+	USART3.CTRLB |= USART_TXEN_bm | USART_RXEN_bm;
+	stdout = &USART_stream;
+}
+
+static void USART_sendChar(char c)
+{
+	while (!(USART3.STATUS & USART_DREIF_bm))
+	{
+		;
+	}
+
+	USART3.TXDATAL = c;
+}
+
+static void USART_sendString(const char* str)
+{
+	for (size_t i = 0; i < strlen(str); i++)
+	{
+		USART_sendChar(str[i]);
+	}
+}
+
+static uint8_t USART_read(void)
+{
+	while (!(USART3.STATUS & USART_RXCIF_bm))
+	{
+		;
+	}
+
+	return USART3.RXDATAL;
+		}
+ 
+static void executeCommand(const char* command)
+	{
+		
+		// level 0: main menu
+		// level 1: submenu 1
+		// level 2: submenu 2
+		// level 3: submenu 3
+		
+		
+		switch (level)
+		{
+			default: // main menu
+			USART_sendString("Welcome to the main menu, you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
+
+			if (strcmp(command, "STATUS") == !1)
+			{
+				level = 1; // switch to submenu 1
+				USART_sendString("Entering status submenu...\r\n");
+			}
+			else if (strcmp(command, "MANUAL") == !1)
+			{
+				level = 2;
+				// switch to submenu 2
+				USART_sendString("Entering manual submenu...\r\n");
+			}
+			else if (strcmp(command, "AUTOMATIC") == !1)
+			{
+				level = 3;
+				// switch to submenu 3
+				USART_sendString("Entering automatic submenu...\r\n");
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+			break;
+
+			case 1: // STATUS submenu
+			if (level == 1) {
+				USART_sendString("Welcome to the status submenu, here you can choose between looking at RUNTIME, TEMPERATURE, RPM and BACK if you want back to the main menu\r\n");
+				if (strcmp(command, "RUNTIME") == !1)
+				{
+					printf("RUNTIME IS: %u\r\n", x);
+				}
+				else if (strcmp(command, "TEMPERATURE") == 0)
+				{
+					printf("TEMPERATURE IS: %u\r\n", temperaturC);
+				}
+				else if (strcmp(command, "RPM") == 0)
+				{
+					USART_sendString("RPM IS:  \r\n");
+				}
+				else if (strcmp(command, "BACK") == 0)
+				{
+					level = 0; // go back to main menu
+					USART_sendString("Returning to Main Menu...\r\n");
+				}
+			}
+			else
+			{
+				USART_sendString("Invalid command\r\n");
+			}
+			break;
+
+			case 2: //submenu 2 / MANUAL
+			if (level == 2) {
+				USART_sendString("Welcome to the manual control submenu, here you can choose manually the strength of the fan using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+
+				if (strcmp(command, "HIGH") == 0)
+				{
+					TCA0.SINGLE.CMP2 = 0x9F;    //duty cycle
+					USART_sendString("Fan Power HIGH\r\n");
+				}
+				else if (strcmp(command, "MEDIUM") == 0)
+				{
+					TCA0.SINGLE.CMP2 = 0x9F/2;    //duty cycle
+					USART_sendString("Fan power MEDIUM.\r\n");
+				}
+				else if (strcmp(command, "LOW") == 0)
+				{
+					TCA0.SINGLE.CMP2 = 0x9F/8;    //duty cycle
+					USART_sendString("Fan Power LOW\r\n");
+				}
+				else if (strcmp(command, "BACK") == 0)
+				{
+					level = 0; // go back to main menu
+					USART_sendString("Returning to Main Menu...\r\n");
+				}
+				else
+				{
+					USART_sendString("Invalid command\r\n");
+				}
+			}
+			break;
+			
+			case 3: //submenu 3 / AUTOMATIC
+			if (level == 3) {
+				USART_sendString("Welcome to the automatic control submenu, here you can choose to make the fans to go automatically by using the: AUTOMATIC command and BACK if you want back to the main menu\r\n");
+				if(strcmp(command, "AUTOMATIC") == 0){
+					//få den til å gå automatisk
+					USART_sendString("Fan is now going automatically");
+				}
+				else if (strcmp(command, "BACK") == 0) {
+					level = 0; // go back to main menu
+					USART_sendString("Returning to Main Menu...\r\n");
+					}else {
+					USART_sendString("Invalid command\r\n");
+					
+				}
+			}
+			break;
+	}
+}
+
+switch(fan){
+	case 0:
+	if (strcmp(command, "FAN0") == 0) {
+		 uint8_t x = get_runtime_fan(0); //get runtime from one of the fans
+		 
+
+	}
+	break;
+	case 1:
+	f = Fantime[1];
+	break;
+	case 2:
+	f = Fantime[2];
+	break;
+	case 3:
+	f = Fantime[3];
+	break;
+	case 4:
+	f = Fantime[4];
+	break;
+	case 5:
+	f = Fantime[5];
+	break;
+	case 6:
+	f = Fantime[6];
+	break;
+	case 7:
+	f = Fantime[7];
+	break;
+}
+return f;
+}
+}
+
+
+void PWM(){
+	//Velger pin out
+	PORTD.DIR = PIN2_bm;
+	PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc; //slår på pwm output på portd
+	
+	TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på pwm pin 2 på port D setter på timer i singelslope mode
+	
+	//Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
+	TCA0.SINGLE.PER = 0x9F; //signal periode (t)
+	
+	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; //slår på tomer med pre-scaler satt til 1
+}
