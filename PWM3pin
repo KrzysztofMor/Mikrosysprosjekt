@@ -1,0 +1,35 @@
+/*
+ * GccApplication11.c
+ *
+ * Created: 21.03.2023 15:44:35
+ * Author : kryst
+ */ 
+#define F_CPU 4000000
+#include <avr/io.h>
+
+
+void PWM();
+
+int main(void)
+{
+    PWM();
+    while (1) 
+    {
+    }
+}
+
+void PWM(){
+    //Velger pin out
+    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Setter PD0, PD1 og PD2 som utganger
+    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc; // Slår på PWM-output på Port D
+    
+    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på PWM pin 2 på Port D og PWM pin 0 og 1 på Port D, setter timeren i singelslope mode
+    
+    //Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
+    TCA0.SINGLE.PER = 0x9F; // Signalperiode (t)
+    TCA0.SINGLE.CMP2 = 0x9F/2; // Duty cycle på PD2
+    TCA0.SINGLE.CMP1 = 0x9F/4; // Duty cycle på PD1
+    TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD0
+    
+    TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // Slår på timeren med pre-scaler satt til 1
+}
