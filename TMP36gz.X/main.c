@@ -6,6 +6,7 @@
 */
 
 #define F_CPU 4000000UL
+//#define RTC_PERIOD      //RTC periode
 #include <util/delay.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -23,8 +24,8 @@ int main(void) {
 	sei();
     
     while(1){
-        readADC(0, 20, 100) //PD pin, min temp, max temp   
-        printf("PWM:%d\r\n",analogValue);
+        uint16_t temp = readADC(0, 20, 100) //PD pin, min temp, max temp   
+        printf("PWM:%d\r\n",temp);
         _delay_ms(1000);                          //Litt venting før neste verdi blir sendt 
         
     }
