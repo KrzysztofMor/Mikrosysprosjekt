@@ -17,7 +17,7 @@
 #include "usart.h"
 #include "adc.h"
 
-uint16_t readADC(uint16_t pin, uint16_t minimum, uint16_t maximum);
+uint16_t read_i2c_temp(uint16_t pin, uint16_t minimum, uint16_t maximum);
 
 int main(void) {  
     USART3_init();  //Activates serial connection over PB0 and PB1	
@@ -31,11 +31,18 @@ int main(void) {
     }
 }
 
-uint16_t readADC(uint16_t pin, uint16_t minimum, uint16_t maximum){
+uint16_t read_i2c_temp(uint16_t pin, uint16_t minimum, uint16_t maximum){
     ADC0.init(pin); //Activates ADC on port D with initialized pin
     uint16_t adcVal = ADC0_read();  //Reads Analog value on input
     uint16_t TemperaturRead = temperaturC(adcVal, 0);   //converts A-value to temperature
     uint16_t analogValue = analogTempvalue(TemperaturRead, minimum, maximum);   //Converts Temperatur to analog value with minimum and maximum range. 
     return analogValue;
+}
+
+uint16_t read_fantemperature(uint16_t pin){
+    ADC0.init(pin); //Activates ADC on port D with initialized pin
+    uint16_t adcVal = ADC0_read();  //Reads Analog value on input
+    uint16_t TemperaturRead = temperaturC(adcVal, 0);   //converts A-value to temperature
+    return TemperaturRead;
 }
 
