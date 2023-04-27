@@ -8,6 +8,7 @@
 #include "rpm.h"
 #include "RTC.h"
 #include "TMP36gz.h"
+#include "adc.h"
 
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64 * F_CPU / (16 * (float)BAUD_RATE)) + 0.5)
 #define CMD_MAX_SIZE 15
@@ -17,23 +18,28 @@ static void USART_sendChar(char c);
 static void USART_sendString(const char* str);
 static uint8_t USART_read(void);
 static void executeCommand(const char* command);
+void menu_status(const char* command);
+void menu_manual(const char* command);
+void menu_auto(const char* command);
 
-static FILE USART_stream = FDEV_SETUP_STREAM(USART_sendChar, NULL, _FDEV_SETUP_WRITE);
+
 uint16_t temperaturC(uint16_t temp, uint8_t tempScale);
 int level = 0;
 
+static FILE USART_stream = FDEV_SETUP_STREAM(USART_sendChar, NULL, _FDEV_SETUP_WRITE);
+
 int main(void)
 { 
-    read_fantemperature(0);
+    //read_fantemperature(0);
 	fan_memory();
+    USART_init();
+    RTC_init();
 	PORTE.DIRSET = 0b00000011; 
 	const int maxVal = 15; // Maximum length for input
 	char command[CMD_MAX_SIZE] = {0};
-	RTC_init();
+	
 	uint8_t index = 0;
 	void PWM();
-	USART_init();
-	USART_sendChar("C");
 	_delay_ms(10);
 	executeCommand(command);
 	while (1)
@@ -99,98 +105,150 @@ static uint8_t USART_read(void)
 	return USART3.RXDATAL;
 		}
  
-static void executeCommand(const char* command)
-	{
+
+static void executeCommand(const char* command){
 		
 		// level 0: main menu
 		// level 1: submenu 1
 		// level 2: submenu 2
 		// level 3: submenu 3
-		
-		
 		switch (level)
 		{
 			default: // main menu
 			USART_sendString("Welcome to the main menu, you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
 
-			if (strcmp(command, "S") == !1)
-			{
-				level = 1; // switch to submenu 1
-				USART_sendString("Entering status submenu...\r\n");
-			}
-			else if (strcmp(command, "M") == !1)
-			{
-				level = 2;
-				// switch to submenu 2
-				USART_sendString("Entering manual submenu...\r\n");
-			}
-			else if (strcmp(command, "A") == !1)
-			{
-				level = 3;
-				// switch to submenu 3
-				USART_sendString("Entering automatic submenu...\r\n");
-			}
-			else
-			{
-				USART_sendString("Invalid command\r\n");
-			}
-			break;
+                if (strcmp(command, "s") == !1)
+                    {
+                    level = 1; // switch to submenu 1
+                    USART_sendString("Entering status submenu...\r\n");
+                }
+                else if (strcmp(command, "m") == !1)
+                {
+                    level = 2;
+                    // switch to submenu 2
+                    USART_sendString("Entering manual submenu...\r\n");
+                }
+                else if (strcmp(command, "a") == !1)
+                {
+                    level = 3;
+                    // switch to submenu 3
+                    USART_sendString("Entering automatic submenu...\r\n");
+                }
+                else
+                {
+                    USART_sendString("Invalid command\r\n");
+                }
+                break;
 
 			case 1: // STATUS submenu
 			if (level == 1) {
-				printf("Choose one out of 8 fans to look at, rmember to reset it too.");
+				printf("choose Fan 0->7 with <FANn>. <resetn> to to reset runtime.");
+				menu_status(command);
 				
-				if (strcmp(command, "FAN0") == 0){
+                break;
+            }
+			case 2: //submenu 2 / MANUAL
+			if (level == 2) {
+				USART_sendString("Welcome to the manual control submenu, here you can choose manually the strength of the fan using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+                menu_manual(command);	
+			}
+			break;
+			
+			case 3: //submenu 3 / AUTOMATIC
+			if (level == 3) {
+				USART_sendString("Welcome to the automatic control submenu, here you can choose to make the fans to go automatically by using the: AUTOMATIC command and BACK if you want back to the main menu\r\n");
+				menu_auto(command);
+			}
+			break;
+	}
+}
+
+
+
+void menu_status(const char* command) {
+    if (strcmp(command, "FAN0") == 0){
 					uint8_t x = get_runtime_fan(0);
 					uint8_t y = read_fantemperature(0);
-					printf("FAN 0 RUNTIME IS: %u\r\n", x);
-					printf("FAN 0 TEMPERATURE IS: %u\r\n", y);
+                    USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				else if(strcmp(command, "FAN1") == 0){
 					uint8_t x = get_runtime_fan(1);
 					uint8_t y = read_fantemperature(1);
-					printf("FAN 1 RUNTIME IS: %u\r\n", x);
-					printf("FAN 1 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				
 				else if(strcmp(command, "FAN2") == 0){
 					uint8_t x = get_runtime_fan(2);
 					uint8_t y = read_fantemperature(2);
-					printf("FAN 2 RUNTIME IS: %u\r\n", x);
-					printf("FAN 2 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				
 				else if(strcmp(command, "FAN3") == 0){
 					uint8_t x = get_runtime_fan(3);
 					uint8_t y = read_fantemperature(3);
-					printf("FAN 3 RUNTIME IS: %u\r\n", x);
-					printf("FAN 3 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				
 				else if(strcmp(command, "FAN4") == 0){
 					uint8_t x = get_runtime_fan(4);
 					uint8_t y = read_fantemperature(4);
-					printf("FAN 4 RUNTIME IS: %u\r\n", x);
-					printf("FAN 4 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				else if(strcmp(command, "FAN5") == 0 ){
 					uint8_t x = get_runtime_fan(5);
 					uint8_t y = read_fantemperature(5);
-					printf("FAN 5 RUNTIME IS: %u\r\n", x);
-					printf("FAN 5 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 				}
 				else if(strcmp(command, "FAN6") == 0 ){
 					uint8_t x = get_runtime_fan(6);
 					uint8_t y = read_fantemperature(6);
-					printf("FAN 6 RUNTIME IS: %u\r\n", x);
-					printf("FAN 6 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 					
 				}
 				else if(strcmp(command, "FAN7") == 0 ){
 					uint8_t x = get_runtime_fan(7);
 					uint8_t y = read_fantemperature(7);
-					printf("FAN 7 RUNTIME IS: %u\r\n", x);
-					printf("FAN 7 TEMPERATURE IS: %u\r\n", y);
+					USART_sendString("\n");
+                    USART_sendString("Fan0:");
+                    USART_sendString("\n");
+					printf("RUNTIME: %u\n", x);
+					printf("TEMPERATURE: %u\n", y);
+                    printf("RPM: %u\n", x);
 					
 				}
 				else if(strcmp(command, "Reset0") == 0 ){
@@ -236,159 +294,39 @@ static void executeCommand(const char* command)
 				USART_sendString("Invalid command\r\n");
 				}
 			}
-			break;
 
-			case 2: //submenu 2 / MANUAL
-			if (level == 2) {
-				USART_sendString("Welcome to the manual control submenu, here you can choose manually the strength of the fan using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
-
-				if (strcmp(command, "HIGH") == 0)
-				{
-					TCA0.SINGLE.CMP2 = 0x9F;    //duty cycle
-					USART_sendString("Fan Power HIGH\r\n");
-				}
-				else if (strcmp(command, "MEDIUM") == 0)
-				{
-					TCA0.SINGLE.CMP2 = 0x9F/2;    //duty cycle
-					USART_sendString("Fan power MEDIUM.\r\n");
-				}
-				else if (strcmp(command, "LOW") == 0)
-				{
-					TCA0.SINGLE.CMP2 = 0x9F/8;    //duty cycle
-					USART_sendString("Fan Power LOW\r\n");
-				}
-				else if (strcmp(command, "BACK") == 0)
-				{
-					level = 0; // go back to main menu
-					USART_sendString("Returning to Main Menu...\r\n");
-				}
-				else
-				{
-					USART_sendString("Invalid command\r\n");
-				}
-			}
-			break;
-			
-			case 3: //submenu 3 / AUTOMATIC
-			if (level == 3) {
-				USART_sendString("Welcome to the automatic control submenu, here you can choose to make the fans to go automatically by using the: AUTOMATIC command and BACK if you want back to the main menu\r\n");
-				if(strcmp(command, "AUTOMATIC") == 0){
-					//få den til å gå automatisk
-					USART_sendString("Fan is now going automatically");
-				}
-				else if (strcmp(command, "BACK") == 0) {
-					level = 0; // go back to main menu
-					USART_sendString("Returning to Main Menu...\r\n");
-					}else {
-					USART_sendString("Invalid command\r\n");
-					
-				}
-			}
-			break;
+void menu_manual(const char* command){
+    if (strcmp(command, "HIGH") == 0){
+		TCA0.SINGLE.CMP2 = 0x9F;    //duty cycle
+		USART_sendString("Fan Power HIGH\r\n");
+	}
+	else if (strcmp(command, "MEDIUM") == 0){
+		TCA0.SINGLE.CMP2 = 0x9F/2;    //duty cycle
+		USART_sendString("Fan power MEDIUM.\r\n");
+	}
+	else if (strcmp(command, "LOW") == 0){
+		TCA0.SINGLE.CMP2 = 0x9F/8;    //duty cycle
+		USART_sendString("Fan Power LOW\r\n");
+	}
+	else if (strcmp(command, "BACK") == 0){
+		level = 0; // go back to main menu
+		USART_sendString("Returning to Main Menu...\r\n");
+	}
+	else{
+		USART_sendString("Invalid command\r\n");
 	}
 }
 
-/* void fanstatus(uint8_t fan, command){
-	printf("Choose one out of 8 fans to look at, rmember to reset it too.");
-	if (strcmp(command, "FAN0") == 0){
-		uint8_t x = get_runtime_fan(0);
-		uint8_t y = read_fantemperature(0);
-		printf("FAN 0 RUNTIME IS: %u\r\n", x);
-		printf("FAN 0 TEMPERATURE IS: %u\r\n", y);		
+void menu_auto(const char* command){
+    if(strcmp(command, "AUTOMATIC") == 0){ 					
+        USART_sendString("Fan is now going automatically");
 	}
-	else if(strcmp(command, "FAN1" == 0){
-		uint8_t x = get_runtime_fan(1);
-		uint8_t y = read_fantemperature(1);
-		printf("FAN 1 RUNTIME IS: %u\r\n", x);
-		printf("FAN 1 TEMPERATURE IS: %u\r\n", y);
-	}
-	
-	else if(strcmp(command, "FAN2" == 0){
-		uint8_t x = get_runtime_fan(2);
-		uint8_t y = read_fantemperature(2);
-		printf("FAN 2 RUNTIME IS: %u\r\n", x);
-		printf("FAN 2 TEMPERATURE IS: %u\r\n", y);
-	}
-	
-	else if(strcmp(command, "FAN3" == 0){
-		uint8_t x = get_runtime_fan(3);
-		uint8_t y = read_fantemperature(3);
-		printf("FAN 3 RUNTIME IS: %u\r\n", x);
-		printf("FAN 3 TEMPERATURE IS: %u\r\n", y);		
-	}
-	
-	else if(strcmp(command, "FAN4" == 0){
-		uint8_t x = get_runtime_fan(4);
-		uint8_t y = read_fantemperature(4);
-		printf("FAN 4 RUNTIME IS: %u\r\n", x);
-		printf("FAN 4 TEMPERATURE IS: %u\r\n", y);		
-	}
-	 else if(strcmp(command, "FAN5") == 0){
-		uint8_t x = get_runtime_fan(5);
-		uint8_t y = read_fantemperature(5);
-		printf("FAN 5 RUNTIME IS: %u\r\n", x);
-		printf("FAN 5 TEMPERATURE IS: %u\r\n", y);		
-	}
-	else if(strcmp(command, "FAN6") == 0){
-		uint8_t x = get_runtime_fan(6);
-		uint8_t y = read_fantemperature(6);
-		printf("FAN 6 RUNTIME IS: %u\r\n", x);
-		printf("FAN 6 TEMPERATURE IS: %u\r\n", y);
-		
-	}
-	else if(strcmp(command, "FAN7") == 0){
-		uint8_t x = get_runtime_fan(7);
-		uint8_t y = read_fantemperature(7);
-		printf("FAN 7 RUNTIME IS: %u\r\n", x);
-		printf("FAN 7 TEMPERATURE IS: %u\r\n", y);
-		
-	}
-	else if(strcmp(command, "Reset0" == 0){
-		reset_fan_runtime(0);
-		printf("Fan 0 runtime reset\r\n");
-
-	}
-	else if(strcmp(command, "Reset1" == 0){
-		reset_fan_runtime(1);
-		printf("Fan 1 runtime reset\r\n");
-	}
-	else if (strcmp(command, "Reset2" == 0){
-		reset_fan_runtime(2);
-		printf("Fan 2 runtime reset\r\n");
-	}
-	else if (strcmp(command, "Reset3" == 0){
-		reset_fan_runtime(3);
-		printf("Fan 3 runtime reset\r\n");
-	}
-	else if(strcmp(command, "Reset4" == 0){
-		reset_fan_runtime(4);
-		printf("Fan 4 runtime reset\r\n");
-	}
-	else if (strcmp(command, "Reset5" == 0){
-		reset_fan_runtime(5);
-		printf("Fan 5 runtime reset\r\n");
-	}
-	else if (strcmp(command, "Reset6" == 0){
-		reset_fan_runtime(6);
-		printf("Fan 6 runtime reset\r\n");
-	}
-	else if (strcmp(command, "Reset7" == 0){
-		reset_fan_runtime(7);
-		printf("Fan 7 runtime reset\r\n");
+    
+	else if (strcmp(command, "BACK") == 0) {
+		level = 0; // go back to main menu
+		USART_sendString("Returning to Main Menu...\r\n");
+		}
+    else {
+		USART_sendString("Invalid command\r\n");
 	}
 }
-*/
-
-void PWM(){
-	//Velger pin out
-	PORTC.DIR = PIN2_bm;
-	PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc; //slår på pwm output på portd
-	
-	TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på pwm pin 2 på port D setter på timer i singelslope mode
-	
-	//Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
-	TCA0.SINGLE.PER = 0x9F; //signal periode (t)
-	
-	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; //slår på tomer med pre-scaler satt til 1
-}
-
