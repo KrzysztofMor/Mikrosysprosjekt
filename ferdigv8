@@ -1,3 +1,4 @@
+//Declaring F_CPU and libraries
 #define F_CPU 4000000UL
 #include <avr/io.h>
 #include <util/delay.h>
@@ -9,8 +10,8 @@
 #include "RTC.h"
 #include "TMP36gz.h"
 #include "adc.h"
-//#include "usart.h"
 
+//Declaring max amount of character in UART and baud rate
 #define CMD_MAX_SIZE 15
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64*F_CPU / (16*(float)BAUD_RATE))+0.5)
 
@@ -24,9 +25,13 @@
 #define DIR_READ 1
 #define DIR_WRITE 0
 
+//i2c
+
 #define TWI_IS_CLOCKHELD() TWI0.MSTATUS & TWI_CLKHOLD_bm
 #define TWI_IS_BUSERR() TWI0.MSTATUS & TWI_BUSERR_bm
 #define TWI_IS_ARBLOST() TWI0.MSTATUS & TWI_ARBLOST_bm
+
+//Deciding which messages shall be acknoladged and which not
 
 #define CLIENT_NACK() TWI0.MSTATUS & TWI_RXACK_bm
 #define CLIENT_ACK() !(TWI0.MSTATUS & TWI_RXACK_bm)
@@ -35,6 +40,8 @@
 
 //Macro for for ensuring proper timing between operations (essentially waiting for the bus to be OK).
 #define TWI_WAIT() while (!((TWI_IS_CLOCKHELD()) || (TWI_IS_BUSERR()) || (TWI_IS_ARBLOST()) || (TWI_IS_BUSBUSY())))
+
+//UART menusystem functions and PWM
 
 static void executeCommand(const char* command);
 void menu_status(const char* command);
@@ -54,6 +61,8 @@ void Temp_data(uint8_t * data);
 volatile bool state = false;
 volatile uint32_t RPM;
 
+//Global variables needed for UART menusystem, and functions needed for UART 
+
 int level = 0;
 int fan_lvl = 0;
 int USART_printChar(char c, FILE *stream);
@@ -64,6 +73,8 @@ static void USART_sendString(const char* str);
 uint8_t USART_read(void);
 uint32_t readfanspeed(uint32_t pin);
 void Print_Binary(uint8_t motas);
+
+//declaring RPM
 
 ISR(TCB0_INT_vect){
     RPM = readRPM();
@@ -77,7 +88,6 @@ int main(void){
     readRPM_init();
     TWI0_M_init();
     _delay_ms(5000);
-	//PORTE.DIRSET = 0b00000011; 
 	const int maxVal = 15; // Maximum length for input
 	char command[CMD_MAX_SIZE] = {0};
 	uint8_t index = 0;
