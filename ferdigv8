@@ -84,7 +84,7 @@ ISR(TCB0_INT_vect){
 
 int main(void){ 
     USART_init();
-    RuntimeStartup();
+    RuntimeStartup();	//Functions declared in main
     readRPM_init();
     TWI0_M_init();
     _delay_ms(5000);
@@ -102,7 +102,7 @@ int main(void){
 	while (1) {
         
         char c = (char)USART_read();
-		if (c != '\r' && c != '\n'){
+		if (c != '\r' && c != '\n'){	// If received \ r or \ n
 			if (index < maxVal){
 				command[index++] = c;
 			}
@@ -112,13 +112,12 @@ int main(void){
 			}
 		}
 
-		if (c == '\n'){
+		if (c == '\n'){		// If received  \ n
 			command[index] = '\0';
 			index = 0;
             
 			executeCommand(command);
 		}  
-        //printf("RPM is: %u\n", readfanspeed(5));
 	}
 }
  
@@ -160,22 +159,20 @@ static void executeCommand(const char* command){
                 break;
 
 			case 1: // STATUS submenu
-			if (level == 1) {
+			if (level == 1) {	//Triggered if s is written in UART
 				
 				menu_status(command);
 				
                 break;
             }
 			case 2: //submenu 2 / MANUAL
-			if (level == 2) {
-				//USART_sendString("Welcome to the manual control submenu, here you can choose manually the strength of the fan using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
+			if (level == 2) {	//Triggered if a is written in UART
                 menu_manual(command);	
 			}
 			break;
 			
 			case 3: //submenu 3 / AUTOMATIC
-			if (level == 3) {
-				//USART_sendString("Welcome to the automatic control submenu, here you can choose to make the fans to go automatically by using the: AUTOMATIC command and BACK if you want back to the main menu\r\n");
+			if (level == 3) {	//Triggered if a is written in UART
 				menu_auto(command);
 			}
 			break;
@@ -183,7 +180,7 @@ static void executeCommand(const char* command){
 }
 
 void menu_status(const char* command) {
-    if (strcmp(command, "fan0") == 0){
+    if (strcmp(command, "fan0") == 0){		//shows runtime, temperature and rpm for fan0
         uint16_t x = get_runtime_fan(0);
         uint16_t y = read_fantemperature(0);
         uint16_t z = readfanspeed(0);
@@ -194,7 +191,7 @@ void menu_status(const char* command) {
         printf("TEMPERATURE: %u\n", y);
         printf("RPM: %u\n", z);
     }
-    else if(strcmp(command, "fan1") == 0){
+    else if(strcmp(command, "fan1") == 0){	//shows runtime, temperature and rpm for fan1
         uint16_t x = get_runtime_fan(1);
         uint16_t y = read_fantemperature(1);
         uint16_t z = readfanspeed(1);
@@ -206,7 +203,7 @@ void menu_status(const char* command) {
         printf("RPM: %u\n", z);
     }
 
-    else if(strcmp(command, "fan2") == 0){
+    else if(strcmp(command, "fan2") == 0){	//shows runtime, temperature and rpm for fan2
         uint16_t x = get_runtime_fan(2);
         uint16_t y = read_fantemperature(2);
         uint16_t z = readfanspeed(2);
@@ -218,7 +215,7 @@ void menu_status(const char* command) {
         printf("RPM: %u\n", z);
     }
 
-    else if(strcmp(command, "fan3") == 0){
+    else if(strcmp(command, "fan3") == 0){	//shows runtime, temperature and rpm for fan3
         uint16_t x = get_runtime_fan(3);
         uint16_t y = read_fantemperature(3);
         uint16_t z = readfanspeed(3);
@@ -230,7 +227,7 @@ void menu_status(const char* command) {
         printf("RPM: %u\n", z);
     }
 
-    else if(strcmp(command, "fan4") == 0){
+    else if(strcmp(command, "fan4") == 0){	//shows runtime, temperature and rpm for fan4
         uint16_t x = get_runtime_fan(4);
         uint16_t y = read_fantemperature(4);
         uint16_t z = readfanspeed(4);
@@ -241,7 +238,7 @@ void menu_status(const char* command) {
         printf("TEMPERATURE: %u\n", y);
         printf("RPM: %u\n", z);
     }
-    else if(strcmp(command, "fan5") == 0 ){
+    else if(strcmp(command, "fan5") == 0 ){	//shows runtime, temperature and rpm for fan5
         uint16_t x = get_runtime_fan(5);
         uint16_t y = read_fantemperature(5);
         uint16_t z = readfanspeed(5);
@@ -252,7 +249,7 @@ void menu_status(const char* command) {
         printf("TEMPERATURE: %u\n", y);
         printf("RPM: %u\n", z);
     }
-    else if(strcmp(command, "fan6") == 0 ){
+    else if(strcmp(command, "fan6") == 0 ){	//shows runtime, temperature and rpm for fan6
         uint16_t x = get_runtime_fan(6);
         uint16_t y = read_fantemperature(6);
         USART_sendString("\n");
@@ -263,7 +260,7 @@ void menu_status(const char* command) {
         printf("RPM: %u\n", 0);
 
     }
-    else if(strcmp(command, "fan7") == 0 ){
+    else if(strcmp(command, "fan7") == 0 ){	//shows runtime, temperature and rpm for fan7
         uint16_t x = get_runtime_fan(7);
         uint16_t y = read_fantemperature(7);
         USART_sendString("\n");
@@ -274,40 +271,40 @@ void menu_status(const char* command) {
         printf("RPM: %u\n", 0);
 
     }
-    else if(strcmp(command, "reset0") == 0 ){
+    else if(strcmp(command, "reset0") == 0 ){	//reset runtime of fan0
         reset_fan_runtime(0);
         printf("Fan 0 runtime reset\r\n");
 
     }
-    else if(strcmp(command, "reset1") == 0){
+    else if(strcmp(command, "reset1") == 0){	//reset runtime of fan1
         reset_fan_runtime(1);
         printf("Fan 1 runtime reset\r\n");
     }
-    else if (strcmp(command, "reset2") == 0){
+    else if (strcmp(command, "reset2") == 0){	//reset runtime of fan2
         reset_fan_runtime(2);
         printf("Fan 2 runtime reset\r\n");
     }
-    else if (strcmp(command, "reset3") == 0){
+    else if (strcmp(command, "reset3") == 0){	//reset runtime of fan3
         reset_fan_runtime(3);
         printf("Fan 3 runtime reset\r\n");
     }
-    else if(strcmp(command, "reset4") == 0){
+    else if(strcmp(command, "reset4") == 0){	//reset runtime of fan4
         reset_fan_runtime(4);
         printf("Fan 4 runtime reset\r\n");
     }
-    else if (strcmp(command, "reset5") == 0){
+    else if (strcmp(command, "reset5") == 0){	//reset runtime of fan5
         reset_fan_runtime(5);
         printf("Fan 5 runtime reset\r\n");
     }
-    else if (strcmp(command, "reset6") == 0){
+    else if (strcmp(command, "reset6") == 0){	//reset runtime of fan6
         reset_fan_runtime(6);
         printf("Fan 6 runtime reset\r\n");
     }
-    else if (strcmp(command, "reset7") == 0){
+    else if (strcmp(command, "reset7") == 0){	//reset runtime of fan7
         reset_fan_runtime(7);
         printf("Fan 7 runtime reset\r\n");
     }
-    else if (strcmp(command, "BACK") == 0)
+    else if (strcmp(command, "BACK") == 0)	//return to main menu
     {
         level = 0; // go back to main menu
         USART_sendString("Returning to Main Menu...\r\n");
@@ -321,9 +318,9 @@ void menu_status(const char* command) {
 }
 
 void menu_manual(const char* command){
-    PWM();
+    PWM();	//PWM function needed for fan manipulation
     switch(fan_lvl){
-		default: 
+		default: //Move to the subsubmenu for each fan 0-5
 		if (strcmp(command, "fan0") == 0) {
 			printf("Choose manually the strength of fan 0 using the following commands: <high<, <medium>, <low> and BACK if you want back to the main menu\r\n");
 			fan_lvl = 1;
@@ -348,7 +345,7 @@ void menu_manual(const char* command){
 			printf("Choose manually the strength of fan 5 using the following commands: <high<, <medium>, <low> and BACK if you want back to the main menu\r\n");
 			fan_lvl = 6;
 		}
-        else if (strcmp(command, "BACK") == 0) {
+        else if (strcmp(command, "BACK") == 0) {	//return to main menu
             level = 0;
             USART_sendString("Returning to Main Menu...\r\n");
             USART_sendString("...Welcome to the main menu...\r\n");
@@ -387,15 +384,15 @@ void menu_manual(const char* command){
 		case 2:
 		if (fan_lvl == 2) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle på PD1
 				USART_sendString("Fan 1 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle på PD1
 				USART_sendString("Fan 1 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD1
 				USART_sendString("Fan 1 Power LOW\r\n");
 			}
             else if (strcmp(command, "BACK") == 0) {
@@ -413,15 +410,15 @@ void menu_manual(const char* command){
 		case 3:
 		if (fan_lvl == 3) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle på PD0
 				USART_sendString("Fan 2 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle på PD0
 				USART_sendString("Fan 2 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD0
 				USART_sendString("Fan 2 Power LOW\r\n");
 			}
             else if (strcmp(command, "BACK") == 0) {
@@ -439,15 +436,15 @@ void menu_manual(const char* command){
 		case 4:
 		if (fan_lvl == 4) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle på PC4
 				USART_sendString("Fan 3 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle på PC4
 				USART_sendString("Fan 3 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PC4
 				USART_sendString("Fan 3 Power LOW\r\n");
 			}
             else if (strcmp(command, "BACK") == 0) {
@@ -464,15 +461,15 @@ void menu_manual(const char* command){
 		case 5:
 		if (fan_lvl == 5) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle på PC5
 				USART_sendString("Fan 4 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle på PC5
 				USART_sendString("Fan 4 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PC5
 				USART_sendString("Fan 4 Power LOW\r\n");
 			}
             else if (strcmp(command, "BACK") == 0) {
@@ -489,15 +486,15 @@ void menu_manual(const char* command){
 		case 6:
 		if (fan_lvl == 6) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle på PC6
 				USART_sendString("Fan 5 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle på PC6
 				USART_sendString("Fan 5 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PC6
 				USART_sendString("Fan 5 Power LOW\r\n");
 			}
             else if (strcmp(command, "BACK") == 0) {
