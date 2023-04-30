@@ -14,7 +14,7 @@
 
 #define one_second 0x3ff
 #define Fancount 8
-int hour = 3600;
+uint16_t hour = 3600;
 uint32_t Fantime[Fancount];
 volatile uint64_t runtime_seconds = 0;
 volatile uint64_t pretime = 0;
@@ -91,8 +91,8 @@ void fan_memory(){
     }
     
     if(eeprom_is_ready()==true){
-        for(int i=0; i < Fancount; ++i){
-           Fantime[i] = eeprom_read_dword((uint32_t*)i);
+        for(uint32_t i=0; i < Fancount; ++i){
+           Fantime[i] = eeprom_read_dword((uint32_t*)&i);
        }
     }
 }
@@ -104,12 +104,20 @@ void fan_memory(){
  This function is run when a interrupt occurs. 
  */
 void enable_fan_runtime(){
+    uint16_t h24 = 24*hour;
     if(delayTime(hour) == true){ 
         for(int i=0; i < Fancount; ++i){
-                Fantime[i]++;
-                eeprom_update_dword((uint32_t*)i, Fantime[i]);
-            }
-        } 
+            Fantime[i]++;        
+        }
+    } 
+    
+    if(delayTime(h24)==true && eeprom_is_ready()){
+        
+        for(int i=0; i < Fancount; ++i){
+            
+            eeprom_update_dword((uint32_t*)&i, Fantime[i]);
+        }
+    }
 }
 
 /*
@@ -133,7 +141,7 @@ bool delayTime(uint32_t time_in_s){
  */
 void reset_fan_runtime(uint32_t fan){
     if(eeprom_is_ready()){
-    Fantime[fan] = 0;
-    eeprom_update_dword(fan, 0);
+        Fantime[fan] = 0;
+        eeprom_update_dword((uint32_t*)&fan, 0);
     }
 }
