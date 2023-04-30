@@ -1,4 +1,4 @@
-#define F_CPU 4000000UL
+#define F_CPU 4000000UL    
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdio.h>
@@ -9,7 +9,7 @@
 #include "RTC.h"
 #include "TMP36gz.h"
 #include "adc.h"
-//#include "usart.h"
+//#include "usart.h"   
 
 #define CMD_MAX_SIZE 15
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64*F_CPU / (16*(float)BAUD_RATE))+0.5)
