@@ -9,7 +9,6 @@
 #include "RTC.h"
 #include "TMP36gz.h"
 #include "adc.h"
-//#include "usart.h"
 
 #define CMD_MAX_SIZE 15
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64*F_CPU / (16*(float)BAUD_RATE))+0.5)
@@ -36,59 +35,65 @@
 //Macro for for ensuring proper timing between operations (essentially waiting for the bus to be OK).
 #define TWI_WAIT() while (!((TWI_IS_CLOCKHELD()) || (TWI_IS_BUSERR()) || (TWI_IS_ARBLOST()) || (TWI_IS_BUSBUSY())))
 
-static void executeCommand(const char* command);
-void menu_status(const char* command);
-void menu_manual(const char* command);
-void menu_auto(const char* command);
+//PWM signal function
 void PWM();
 void RuntimeStartup();
+uint32_t readfanspeed(uint32_t pin);
+volatile bool state = false;
+volatile uint32_t RPM;
 
-//i2c
+//i2c functions
 static void TWI0_M_init(void);
 static void I2C0_M_start(uint8_t addr, uint8_t dir);
 static void I2C_M_write(uint8_t addr, uint8_t data);
 static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len);
-void TEMP_i2c();
 void runPWM_auto(int temperatur);
 void Temp_data(uint8_t * data);
-volatile bool state = false;
-volatile uint32_t RPM;
+void TEMP_i2c();
 
-int level = 0;
-int fan_lvl = 0;
+//usart menu functions
+static void executeCommand(const char* command);
+void menu_status(const char* command);
+void menu_manual(const char* command);
+void menu_auto(const char* command);
+
+//usart functions
 int USART_printChar(char c, FILE *stream);
 static FILE USART_stream = FDEV_SETUP_STREAM(USART_printChar, NULL, _FDEV_SETUP_WRITE);
 static void USART_init(void);
 static void USART_sendChar(char c);
 static void USART_sendString(const char* str);
 uint8_t USART_read(void);
-uint32_t readfanspeed(uint32_t pin);
-void Print_Binary(uint8_t motas);
 
-ISR(TCB0_INT_vect){
+int level = 0;
+int fan_lvl = 0;
+
+ISR(TCB0_INT_vect){	//interrupts on caption of PWM signal
     RPM = readRPM();
     state = true;
     TCB0.INTFLAGS = TCB_CAPT_bm;
 }
 
 int main(void){ 
-    USART_init();
-    RuntimeStartup();
-    readRPM_init();
-    TWI0_M_init();
-    _delay_ms(5000);
-	//PORTE.DIRSET = 0b00000011; 
-	const int maxVal = 15; // Maximum length for input
-	char command[CMD_MAX_SIZE] = {0};
-	uint8_t index = 0;
-	//PWM();
+    USART_init();	//setup usart
+    RuntimeStartup();	//setup runtime and reads from memory
+    readRPM_init();	//setup capture signal
+    TWI0_M_init();	//setup i2c communication
+    _delay_ms(5000);	//waiting so user can connect serial monitor on laptop
+	
+    const int maxVal = 15; 		// Maximum length for input
+    char command[CMD_MAX_SIZE] = {0};   // size of character in usart communication
+    uint8_t index = 0;
+	
+    PWM();		//starts fan at low speed for checking that every fan works
     runPWM_auto(50);
-    
-    sei();  //enables interrupts 
-	//executeCommand(command);
+    sei();  		//enables interrupts 
+
+    //start menu instructions 
     USART_sendString("...Welcome to the main menu...\r\n");
     USART_sendString("you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
     USART_sendString("a = auto, m = manual and s = status\r\n");
+	
 	while (1) {
         
         char c = (char)USART_read();
@@ -108,70 +113,71 @@ int main(void){
             
 			executeCommand(command);
 		}  
-        //printf("RPM is: %u\n", readfanspeed(5));
 	}
 }
  
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						/* MENU SYSTEM */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+Main menu: There is three options. submenu 1, 2 or 3. Each level is triggered by typing on a key and hit enter on keyboard.
+Each case take you futher to a submenu. Every submenu has it's own funtion.
+Level determine which submenu you are in. if level is 0, program is taking you back to the main menu.
+*/
 static void executeCommand(const char* command){
-		// level 0: main menu
-		// level 1: submenu 1
-		// level 2: submenu 2
-		// level 3: submenu 3
-		switch (level){
-			default: // main menu
-			//USART_sendString("Welcome to the main menu, you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
+	/* level 0: main menu, level 1: submenu 1, level 2: submenu 2 og level 3: submenu 3 */
+	switch (level){
+			
+		default: // main menu	
+			if (strcmp(command, "s") == !1) {	
+			    level = 1; // switch to submenu 1
+			    USART_sendString("Entering status submenu...\r\n");
+			    printf("choose Fan 0->7 with <fann>. <resetn> to to reset runtime. <BACK> to return to main menu \r\n");
+			}
+			
+			else if (strcmp(command, "m") == !1) {
+			    level = 2;
+			    // switch to submenu 2
+			    USART_sendString("Entering manual submenu...\r\n");
+			    USART_sendString("choose Fan 0->7 with <fann>. <BACK> to return to main menu \r\n");
+			}
+			
+			else if (strcmp(command, "a") == !1) {
+			    level = 3;
+			    // switch to submenu 3
+			    USART_sendString("Entering automatic submenu...\r\n");
+			}
+			
+			else {
+			    USART_sendString("Invalid command\r\n");
+			}
+			break;
 
-                if (strcmp(command, "s") == !1)
-                    {
-                    level = 1; // switch to submenu 1
-                    USART_sendString("Entering status submenu...\r\n");
-                    printf("choose Fan 0->7 with <fann>. <resetn> to to reset runtime. <BACK> to return to main menu \r\n");
-                }
-                else if (strcmp(command, "m") == !1)
-                {
-                    level = 2;
-                    // switch to submenu 2
-                    USART_sendString("Entering manual submenu...\r\n");
-                    USART_sendString("choose Fan 0->7 with <fann>. <BACK> to return to main menu \r\n");
-                    
-                }
-                else if (strcmp(command, "a") == !1)
-                {
-                    level = 3;
-                    // switch to submenu 3
-                    USART_sendString("Entering automatic submenu...\r\n");
-                    
-                }
-                else
-                {
-                    USART_sendString("Invalid command\r\n");
-                }
-                break;
-
-			case 1: // STATUS submenu
+		case 1: // STATUS submenu
 			if (level == 1) {
-				
-				menu_status(command);
-				
-                break;
-            }
-			case 2: //submenu 2 / MANUAL
-			if (level == 2) {
-				//USART_sendString("Welcome to the manual control submenu, here you can choose manually the strength of the fan using the following commands:  HIGH, MEDIUM, LOW and BACK if you want back to the main menu\r\n");
-                menu_manual(command);	
+			    menu_status(command);
 			}
 			break;
 			
-			case 3: //submenu 3 / AUTOMATIC
+		case 2: //submenu 2 / MANUAL
+			if (level == 2) {
+                	    menu_manual(command);	
+			}
+			break;
+			
+		case 3: //submenu 3 / AUTOMATIC
 			if (level == 3) {
-				//USART_sendString("Welcome to the automatic control submenu, here you can choose to make the fans to go automatically by using the: AUTOMATIC command and BACK if you want back to the main menu\r\n");
-				menu_auto(command);
+			    menu_auto(command);
 			}
 			break;
 	}
 }
 
+/*
+This function contains status for 8 fans. Each if statement selects one of the 8 fans. You can watch status or reset runtime.
+In this function you can call status for every fan without going back in the submenu. This is more effective when looking at
+multiple fans.
+*/
 void menu_status(const char* command) {
     if (strcmp(command, "fan0") == 0){
         uint16_t x = get_runtime_fan(0);
@@ -310,10 +316,14 @@ void menu_status(const char* command) {
     }
 }
 
+/*
+This function contains a switch case with 8 fans. You can controll only one fan at a time. But it is possible to go back, inside the function and 
+select a new fan to controll. That way you can run multiple fans with different speed.
+*/
 void menu_manual(const char* command){
     PWM();
     switch(fan_lvl){
-		default: 
+	default: 
 		if (strcmp(command, "fan0") == 0) {
 			printf("Choose manually the strength of fan 0 using the following commands: <high<, <medium>, <low> and BACK if you want back to the main menu\r\n");
 			fan_lvl = 1;
@@ -338,210 +348,208 @@ void menu_manual(const char* command){
 			printf("Choose manually the strength of fan 5 using the following commands: <high<, <medium>, <low> and BACK if you want back to the main menu\r\n");
 			fan_lvl = 6;
 		}
-        else if (strcmp(command, "BACK") == 0) {
-            level = 0;
-            USART_sendString("Returning to Main Menu...\r\n");
-            USART_sendString("...Welcome to the main menu...\r\n");
-            USART_sendString("you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
-            USART_sendString("a = auto, m = manual and s = status\r\n");
-        }
-		else
-		{
+		else if (strcmp(command, "BACK") == 0) {
+			level = 0;
+			USART_sendString("Returning to Main Menu...\r\n");
+			USART_sendString("...Welcome to the main menu...\r\n");
+			USART_sendString("you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
+			USART_sendString("a = auto, m = manual and s = status\r\n");
+		}
+		else{
 			USART_sendString("Invalid command\r\n");
 		}
-		case 1: 
+	case 1: 
 		if (fan_lvl == 1) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 0 Power HIGH\r\n");	
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 0 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F/5; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F/5; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 0 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
-            }
-			else
-			{
+            		else if (strcmp(command, "BACK") == 0) {
+				fan_lvl = 0;
+				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+            		}
+			else{
 				USART_sendString("Invalid command\r\n");
 			}
-        }
+       		}
 		break;
 		
 		case 2:
 		if (fan_lvl == 2) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 1 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 1 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 1 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+            		else if (strcmp(command, "BACK") == 0) {
+                		fan_lvl = 0;
+       				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
 
-            }
-			else 
-			{
+           		}
+			else {
 				USART_sendString("Invalid command\r\n");
 			}
-        }
+        	}
 		break;
 		
 		case 3:
 		if (fan_lvl == 3) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 2 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 2 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 2 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
-            }
-			else
-			{
+            		else if (strcmp(command, "BACK") == 0) {
+                		fan_lvl = 0;
+       				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+           		}
+			else {
 				USART_sendString("Invalid command\r\n");
 			}
-        }
+        	}
 		break;
         
 		
 		case 4:
 		if (fan_lvl == 4) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 3 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 3 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 3 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
-            }
-			else
-			{
+            		else if (strcmp(command, "BACK") == 0) {
+               			fan_lvl = 0;
+       				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+            		}
+			else {
 				USART_sendString("Invalid command\r\n");
 			}
-        }
+        	}
 		break;
 		
 		case 5:
 		if (fan_lvl == 5) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 4 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 4 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 4 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
-            }
-			else
-			{
+            		else if (strcmp(command, "BACK") == 0) {
+                		fan_lvl = 0;
+       				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+            		}
+			else {
 				USART_sendString("Invalid command\r\n");
 			}
-        }
+        	}
 		break;
 		
 		case 6:
 		if (fan_lvl == 6) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 5 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 5 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle pÃ¥ PD2
 				USART_sendString("Fan 5 Power LOW\r\n");
 			}
-            else if (strcmp(command, "BACK") == 0) {
-                fan_lvl = 0;
-       			USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
-            }
-			else
-			{
+            		else if (strcmp(command, "BACK") == 0) {
+                		fan_lvl = 0;
+       				USART_sendString("Choose which fan you want to control, commando <fann> eks: fan0\r\n");
+            		}
+			else {
 				USART_sendString("Invalid command\r\n");
 			}
-        }
-            break;
-    
-}
+        	}
+            	break;
+	}
 }
 
+/*
+This function starts automatic control of fans. It reads values from i2c temperature sensor, and controls pwm output.
+Every time function TEMP_i2c runs, temperature and fanspeed in prosent are shown in the menu.
+*/
 void menu_auto(const char* command){
     
-    if(strcmp(command, "auto") == 0){ 					
-        USART_sendString("Fan is now going automatically\r\n");
-        TEMP_i2c(); //running fans from temperature 
+	if(strcmp(command, "auto") == 0){ 					
+		USART_sendString("Fan is now going automatically\r\n");
+		TEMP_i2c(); //running fans from temperature 
 	}
     
 	else if (strcmp(command, "BACK") == 0) {
 		level = 0; // go back to main menu
 		USART_sendString("Returning to Main Menu...\r\n");
-        USART_sendString("...Welcome to the main menu...\r\n");
-        USART_sendString("you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
-        USART_sendString("a = auto, m = manual and s = status\r\n");
-		}
-    else {
-		USART_sendString("Invalid command\r\n");
+		USART_sendString("...Welcome to the main menu...\r\n");
+		USART_sendString("you can choose to enter the STATUS, MANUAL and AUTOMATIC submenus\r\n");
+		USART_sendString("a = auto, m = manual and s = status\r\n");
 	}
-    
+	
+    	else {
+		USART_sendString("Invalid command\r\n");
+	}   
 }
 
 
  
-
+/*
+Sets 
+*/
 void PWM(){
     //Velger pin out
     PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Setter PD0, PD1 og PD2 som utganger
     PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm;// Setter PC6, PC5 og PC4 som utganger
-    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // Slår på PWM-output på Port D og C
+    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // SlÃ¥r pÃ¥ PWM-output pÃ¥ Port D og C
     TCA0.SINGLE.PER = 0x9F;
     TCA1.SINGLE.PER = 0x9F;
     
     
-    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på PWM pin 2 på Port D og PWM pin 0 og 1 på Port D, setter timeren i singelslope mode
+    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output pÃ¥ PWM pin 2 pÃ¥ Port D og PWM pin 0 og 1 pÃ¥ Port D, setter timeren i singelslope mode
     TCA1.SINGLE.CTRLB = TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc;
     //Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
 	
-	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // Slår på timeren med pre-scaler satt til 1
-	TCA1.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;// Slår på timeren med pre-scaler satt til 1
+	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // SlÃ¥r pÃ¥ timeren med pre-scaler satt til 1
+	TCA1.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;// SlÃ¥r pÃ¥ timeren med pre-scaler satt til 1
 	
 }
 
@@ -550,7 +558,9 @@ void RuntimeStartup(){
     fan_memory();   //reads stored fan runtime from eeprom
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						/* I2c functions */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void TWI0_M_init(void) {
 	
@@ -567,10 +577,10 @@ static void TWI0_M_init(void) {
 	TWI0.MSTATUS = TWI_BUSSTATE_IDLE_gc; //Setting the I2C bus to idle.
 }
 
-/**
- * @brief This function initiates a data transfer with the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param dir Specifies direction of transfer. 1 is read, 0 is write.
+/*
+   This function starts a data transfer with another device on the specified address.
+   addr - is the address of the device on the bus.
+   dir  - specifies direction of transfer. 1 is read, 0 is write.
  */
 static void I2C0_M_start(uint8_t addr, uint8_t dir) {
 	
@@ -580,10 +590,10 @@ static void I2C0_M_start(uint8_t addr, uint8_t dir) {
 	TWI_WAIT();
 }
 
-/**
- * @brief This function writes one byte to the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param data The byte to be written.
+/*
+  This function writes one byte to the device on the specified address.
+  addr - is the address of the device on the bus.
+  data - is the byte to be written.
  */
 static void I2C_M_write(uint8_t addr, uint8_t data) {
 	
@@ -603,11 +613,11 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
 	TWI0.MCTRLB |= TWI_MCMD_STOP_gc;
 }
 
-/**
- * @brief This function reads len bytes to the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param data Pointer to data array. 
- * @param len The number of bytes to be read.
+/*
+  This function reads len bytes to the device on the specified address.
+  addr - is the address of the device on the bus.
+  data - is the pointer to data array. 
+  len  - is the number of bytes to be read.
  */
 static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
 	I2C0_M_start(addr, DIR_READ);
@@ -630,32 +640,28 @@ static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
      
 }
 
-void TEMP_i2c(){
-    
+/*
+This function uses an array to collect data from i2c sensor.
+When communication with the sensor is established, and array is filled with data.
+Temp_data funcion is collecting the right data amount. 
+*/
+void TEMP_i2c(){ 
     uint8_t data[7];
     I2C_M_write(0x38,0xAC);
     _delay_ms(1000);
     I2C_M_read(0x38, data, 0xAC);
 	data[6] = '\0';
     _delay_ms(1000);
-    //uint8_t temp = Temp_data(data);
-    //printf("%u\n", Temp_data(data));
+
     Temp_data(data);
-    //printf("TEMP: %u\n", temp);
-    //USART_sendString("\n");
-    //runPWM_auto(temp);
-	//return Temp_data(data);
-    //return 0;
 }
-
-void runPWM_auto(int temperatur){
-    
-    uint8_t pwm_out = analogTempvalue(temperatur, 30, 100);        //Temperature, minimum, maximum
-    printf("fanProsent: %u\n", map(pwm_out, 0, 159, 0, 100));
-    pwm_ut(pwm_out);//TemperaturRead); 
-}
-
-void Temp_data(uint8_t * data){ // inspirert av gruppe 2
+/*
+From the data array a defined bitplacement is used for temperature.  This function collects temperature from those bits, and
+calculate the temperature.
+equation "temperature" is found in AHT10 datasheet
+temperatur is sent to 
+*/
+void Temp_data(uint8_t * data){ 
 	uint8_t high = (data[5]>>4) & 0x0F;
 	uint8_t low = data[3] & 0x0F;
     
@@ -664,6 +670,10 @@ void Temp_data(uint8_t * data){ // inspirert av gruppe 2
     printf("temp: %.2f\n", temperatur);
     runPWM_auto((int)temperatur);    
 }
+
+
+
+
 
 static void USART_init(void){
 	PORTB.DIRCLR = PIN1_bm;
@@ -702,6 +712,13 @@ int USART_printChar(char c, FILE *stream) {
     return 0; 
 }
 
+void runPWM_auto(int temperatur){
+    
+    uint8_t pwm_out = analogTempvalue(temperatur, 30, 100);        //Temperature, minimum, maximum
+    printf("fanProsent: %u\n", map(pwm_out, 0, 159, 0, 100));
+    pwm_ut(pwm_out);//TemperaturRead); 
+}
+
 uint32_t readfanspeed(uint32_t pin){
     RPMpin(pin); 
     uint32_t speed;
@@ -713,14 +730,4 @@ uint32_t readfanspeed(uint32_t pin){
         speed = 0;
     }
     return speed;
-}
-
-void Print_Binary(uint8_t motas) { //inspirert av gruppe 2 debugg
-	int size = sizeof(motas)*8;
-	
-	printf("Binary %d: ", motas);
-	for (int i = size -1; i>=0; i--){
-		int bit = (motas >> i) & 1;
-		printf("%d",bit);
-	}
 }
