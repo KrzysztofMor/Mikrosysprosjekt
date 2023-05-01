@@ -742,23 +742,21 @@ int USART_printChar(char c, FILE *stream) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
-This function reads 
+This function reads the rotation speed from selected fan
+RPMpin choose which pin should be connected to TCB
+State is "true" on interrupt, and rotationspeed is saved to variable RPM.
 */
 uint32_t readfanspeed(uint32_t pin){
     RPMpin(pin); 
-    uint32_t speed;
     if(state == true){
-        speed = RPM;
+	return RPM;
         state = false;
-    }
-    else{
-        speed = 0;
-    }
-    return speed;
+    }   
 }
 
 /*
-This function starts the runtime of the fans
+This function starts the runtime counter with interrupts every second
+Then reads runtime memory from eeprom.
 */
 void RuntimeStartup(){
     RTC_init(); //Starts counter
