@@ -17,7 +17,7 @@
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64*F_CPU / (16*(float)BAUD_RATE))+0.5)
 
 
-// Formula for calculating baud rate. See chapter 29.3.2.2.1, equation 2 in the datasheet.
+// Formula for calculating baud rate. See chapter 29.3.2.2.1, equation 2 in AVR datasheet.
 #define TWI0_BAUD(F_SCL, T_RISE) ((((((float)F_CPU / (2*(float)F_SCL))) - 5 - ((float)F_CPU * T_RISE))) / 2)
 
 // Defining 100kHZ for the SCL frequency 
@@ -599,15 +599,9 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
 	TWI0.MCTRLB |= TWI_MCMD_STOP_gc;
 }
 
-/**
- * @brief This function reads len bytes to the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param data Pointer to data array. 
- * @param len The number of bytes to be read.
- */
  //Function reads len bytes to the device 
 static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
-//Starting the I2C tranasaction for reading data from the specified adress
+//Starting the I2C tranasaction for reading data from the specified address
 	I2C0_M_start(addr, DIR_READ);
 	
 	//Initializing byte counter
@@ -635,47 +629,43 @@ static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
 
 void TEMP_i2c(){
     
-    uint8_t data[7];
-    I2C_M_write(0x38,0xAC);
+    uint8_t data[7];	//Declaring an array for storing temperature data
+    I2C_M_write(0x38,0xAC);		//Write to the I2C AHT10 sensor
     _delay_ms(1000);
-    I2C_M_read(0x38, data, 0xAC);
-	data[6] = '\0';
+    I2C_M_read(0x38, data, 0xAC);	//Read 7 bytes of data from the sensor
+	data[6] = '\0';			//Set the last byte of data to 0 to terminate the string
     _delay_ms(1000);
-    //uint8_t temp = Temp_data(data);
-    //printf("%u\n", Temp_data(data));
     Temp_data(data);
-    //printf("TEMP: %u\n", temp);
-    //USART_sendString("\n");
-    //runPWM_auto(temp);
-	//return Temp_data(data);
-    //return 0;
 }
 
 void runPWM_auto(int temperatur){
     
     uint8_t pwm_out = analogTempvalue(temperatur, 30, 100);        //Temperature, minimum, maximum
     printf("fanProsent: %u\n", map(pwm_out, 0, 159, 0, 100));
-    pwm_ut(pwm_out);//TemperaturRead); 
+    pwm_ut(pwm_out); 	//Declaring to all fans the max and min temperatures to run
 }
 
-void Temp_data(uint8_t * data){ // inspirert av gruppe 2
+
+void Temp_data(uint8_t * data){
 	uint8_t high = (data[5]>>4) & 0x0F;
 	uint8_t low = data[3] & 0x0F;
     
-	uint16_t raaTemperatur = (low<<12| data[4] << 4 |high);
-	float temperatur = (((float)raaTemperatur/65536)*200)-50;
+	uint16_t AHT10Temperatur = (low<<12| data[4] << 4 |high); //Reads the value from in2c sensor
+	//AHT10 datasheet formula ((S_t/2^20)*200-50)
+	float temperatur = (((float)AHT10Temperatur/65536)*200)-50; 
     printf("temp: %.2f\n", temperatur);
     runPWM_auto((int)temperatur);    
 }
 
 static void USART_init(void){
+	//pinout
 	PORTB.DIRCLR = PIN1_bm;
 	PORTB.DIRSET = PIN0_bm;
-	USART3.BAUD = (uint16_t)USART_BAUDRATE(9600);
-	USART3.CTRLB |= USART_TXEN_bm | USART_RXEN_bm;
+	USART3.BAUD = (uint16_t)USART_BAUDRATE(9600);	//Setting baud rate
+	USART3.CTRLB |= USART_TXEN_bm | USART_RXEN_bm;	//Enabling transmitter and reciver functions of UART
 	stdout = &USART_stream;
 }
-
+//Function to send a char over UART
 static void USART_sendChar(char c){
 	while (!(USART3.STATUS & USART_DREIF_bm))
 	{
@@ -684,14 +674,14 @@ static void USART_sendChar(char c){
 
 	USART3.TXDATAL = c;
 }
-
+//Function to send a string over UART
 static void USART_sendString(const char* str){
 	for (size_t i = 0; i < strlen(str); i++)
 	{
 		USART_sendChar(str[i]);
 	}
 }
-
+//Function to read recieved char
 uint8_t USART_read(void){
 	while (!(USART3.STATUS & USART_RXCIF_bm))
 	{
@@ -700,11 +690,12 @@ uint8_t USART_read(void){
 	return USART3.RXDATAL;
 }
 
+// Wrapping USART_sendChar in a function computable with FDEV_SETUP_STREAM
 int USART_printChar(char c, FILE *stream) {
     USART_sendChar(c);
     return 0; 
 }
-
+//Function that reads RPM
 uint32_t readfanspeed(uint32_t pin){
     RPMpin(pin); 
     uint32_t speed;
@@ -718,12 +709,3 @@ uint32_t readfanspeed(uint32_t pin){
     return speed;
 }
 
-void Print_Binary(uint8_t motas) { //inspirert av gruppe 2 debugg
-	int size = sizeof(motas)*8;
-	
-	printf("Binary %d: ", motas);
-	for (int i = size -1; i>=0; i--){
-		int bit = (motas >> i) & 1;
-		printf("%d",bit);
-	}
-}
