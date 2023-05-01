@@ -1,3 +1,5 @@
+////////////////////Declaring F_CPU and libraries///////////////////////
+
 #define F_CPU 4000000UL
 #include <avr/io.h>
 #include <util/delay.h>
@@ -10,6 +12,7 @@
 #include "TMP36gz.h"
 #include "adc.h"
 
+//Declaring max amount of character in UART and baud rate
 #define CMD_MAX_SIZE 15
 #define USART_BAUDRATE(BAUD_RATE) ((float)(64*F_CPU / (16*(float)BAUD_RATE))+0.5)
 
@@ -23,9 +26,13 @@
 #define DIR_READ 1
 #define DIR_WRITE 0
 
+// Defining macros to check for various I2C errors
+
 #define TWI_IS_CLOCKHELD() TWI0.MSTATUS & TWI_CLKHOLD_bm
 #define TWI_IS_BUSERR() TWI0.MSTATUS & TWI_BUSERR_bm
 #define TWI_IS_ARBLOST() TWI0.MSTATUS & TWI_ARBLOST_bm
+
+//Deciding which messages shall be acknowledged and which not
 
 #define CLIENT_NACK() TWI0.MSTATUS & TWI_RXACK_bm
 #define CLIENT_ACK() !(TWI0.MSTATUS & TWI_RXACK_bm)
@@ -361,15 +368,15 @@ void menu_manual(const char* command){
 	case 1: 
 		if (fan_lvl == 1) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F; // Duty cycle on PD2
 				USART_sendString("Fan 0 Power HIGH\r\n");	
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F/2; // Duty cycle on PD2
 				USART_sendString("Fan 0 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP2 = 0x9F/5; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2 = 0x9F/5; // Duty cycle on PD2
 				USART_sendString("Fan 0 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -385,15 +392,15 @@ void menu_manual(const char* command){
 		case 2:
 		if (fan_lvl == 2) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F; // Duty cycle on PD1
 				USART_sendString("Fan 1 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/2; // Duty cycle on PD1
 				USART_sendString("Fan 1 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1 = 0x9F/8; // Duty cycle on PD1
 				USART_sendString("Fan 1 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -410,15 +417,15 @@ void menu_manual(const char* command){
 		case 3:
 		if (fan_lvl == 3) {
 			if (strcmp(command, "high") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F; // Duty cycle on PD0
 				USART_sendString("Fan 2 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/2; // Duty cycle on PD0
 				USART_sendString("Fan 2 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0 = 0x9F/8; // Duty cycle on PD0
 				USART_sendString("Fan 2 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -435,15 +442,15 @@ void menu_manual(const char* command){
 		case 4:
 		if (fan_lvl == 4) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP0BUF = 0x9F; // Duty cycle on PC4
 				USART_sendString("Fan 3 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/2; // Duty cycle on PC4
 				USART_sendString("Fan 3 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP0BUF = 0x9F/8; // Duty cycle on PC4
 				USART_sendString("Fan 3 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -459,15 +466,15 @@ void menu_manual(const char* command){
 		case 5:
 		if (fan_lvl == 5) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP1BUF = 0x9F; // Duty cycle on PC5
 				USART_sendString("Fan 4 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/2; // Duty cycle on PC5
 				USART_sendString("Fan 4 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP1BUF = 0x9F/8; // Duty cycle on PC5
 				USART_sendString("Fan 4 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -483,15 +490,15 @@ void menu_manual(const char* command){
 		case 6:
 		if (fan_lvl == 6) {
 			if (strcmp(command, "high") == 0) {
-				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle på PD2
+				TCA1.SINGLE.CMP2BUF = 0x9F; // Duty cycle on PC6
 				USART_sendString("Fan 5 Power HIGH\r\n");
 			}
 			else if (strcmp(command, "medium") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/2; // Duty cycle on PC6
 				USART_sendString("Fan 5 Power MEDIUM\r\n");
 			}
 			else if (strcmp(command, "low") == 0) {
-				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle på PD2
+				TCA0.SINGLE.CMP2BUF = 0x9F/8; // Duty cycle on PC6
 				USART_sendString("Fan 5 Power LOW\r\n");
 			}
             		else if (strcmp(command, "BACK") == 0) {
@@ -530,33 +537,39 @@ void menu_auto(const char* command){
 	}   
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						/* PWM functions */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
  
 /*
-Sets 
+This function declares which pins shall be used for PWM
+It also uses TCA to make the function create a PWM signal
 */
 void PWM(){
-    //Velger pin out
-    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Setter PD0, PD1 og PD2 som utganger
-    PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm;// Setter PC6, PC5 og PC4 som utganger
-    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // Slår på PWM-output på Port D og C
+	 //Pinout
+    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Enabling PD0, PD1 and PD2 as outputs
+    PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm; // Enabling PC6, PC5 and PC4 as outputs
+    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc;  // Enabling PWM output on Port D and C.
     TCA0.SINGLE.PER = 0x9F;
     TCA1.SINGLE.PER = 0x9F;
     
-    
-    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc; // Eneblaer output på PWM pin 2 på Port D og PWM pin 0 og 1 på Port D, setter timeren i singelslope mode
+    // Enabling output on PWM pin 2 on Port D and PWM pin 0 and 1 on Port D, sets the timer to single slope mode.
+    TCA0.SINGLE.CTRLB = TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc;
     TCA1.SINGLE.CTRLB = TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP0EN_bm | TCA_SINGLE_WGMODE_SINGLESLOPE_gc;
-    //Formel: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frekvens
+    //Formula: F_CPU/(TCA_SINGLE_CLKSEL_DIVn_gc*(TCA0.SINGLE.PER + 1)) = PWM frequency
 	
-	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // Slår på timeren med pre-scaler satt til 1
-	TCA1.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;// Slår på timeren med pre-scaler satt til 1
+	TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm; // Turning the timer on with pre-scaler set to 1
+	TCA1.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;// Turning the timer on with pre-scaler set to 1
 	
+}
+void runPWM_auto(int temperatur){
+    
+    uint8_t pwm_out = analogTempvalue(temperatur, 30, 100);        //Temperature, minimum, maximum
+    printf("fanProsent: %u\n", map(pwm_out, 0, 159, 0, 100));
+    pwm_ut(pwm_out);//TemperaturRead); 
 }
 
-void RuntimeStartup(){
-    RTC_init(); //Starts counter
-    fan_memory();   //reads stored fan runtime from eeprom
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 						/* I2c functions */
@@ -590,11 +603,7 @@ static void I2C0_M_start(uint8_t addr, uint8_t dir) {
 	TWI_WAIT();
 }
 
-/*
-  This function writes one byte to the device on the specified address.
-  addr - is the address of the device on the bus.
-  data - is the byte to be written.
- */
+//Fuction writes one byte to the specified device
 static void I2C_M_write(uint8_t addr, uint8_t data) {
 	
 	I2C0_M_start(addr, DIR_WRITE);
@@ -603,13 +612,13 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
 	
 	TWI_WAIT();
 	
-	/*Check for NACK*/
+	//Check for NACK
 	if(TWI0.MSTATUS & TWI_RXACK_bm) {
 		//target is full
 		printf("target NACK\n");
 	}
 	
-	/*Issue a stop condition*/
+	//Issue a stop condition
 	TWI0.MCTRLB |= TWI_MCMD_STOP_gc;
 }
 
@@ -671,10 +680,16 @@ void Temp_data(uint8_t * data){
     runPWM_auto((int)temperatur);    
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						/* USART functions */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-
+/*
+This function configures the baud rate
+it also declares RX and TX.
+*/
 static void USART_init(void){
 	PORTB.DIRCLR = PIN1_bm;
 	PORTB.DIRSET = PIN0_bm;
@@ -683,6 +698,9 @@ static void USART_init(void){
 	stdout = &USART_stream;
 }
 
+/*
+This function makes it possible to send a char over USART
+*/
 static void USART_sendChar(char c){
 	while (!(USART3.STATUS & USART_DREIF_bm))
 	{
@@ -692,13 +710,18 @@ static void USART_sendChar(char c){
 	USART3.TXDATAL = c;
 }
 
+/*
+This function makes it possible to send a string over USART
+*/
 static void USART_sendString(const char* str){
 	for (size_t i = 0; i < strlen(str); i++)
 	{
 		USART_sendChar(str[i]);
 	}
 }
-
+/*
+This function reads recieved char from USART
+*/
 uint8_t USART_read(void){
 	while (!(USART3.STATUS & USART_RXCIF_bm))
 	{
@@ -707,18 +730,18 @@ uint8_t USART_read(void){
 	return USART3.RXDATAL;
 }
 
+// Wrapping USART_sendChar in a function computable with FDEV_SETUP_STREAM
 int USART_printChar(char c, FILE *stream) {
     USART_sendChar(c);
     return 0; 
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						/* Other functions */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void runPWM_auto(int temperatur){
-    
-    uint8_t pwm_out = analogTempvalue(temperatur, 30, 100);        //Temperature, minimum, maximum
-    printf("fanProsent: %u\n", map(pwm_out, 0, 159, 0, 100));
-    pwm_ut(pwm_out);//TemperaturRead); 
-}
-
+/*
+This function reads 
+*/
 uint32_t readfanspeed(uint32_t pin){
     RPMpin(pin); 
     uint32_t speed;
@@ -730,4 +753,9 @@ uint32_t readfanspeed(uint32_t pin){
         speed = 0;
     }
     return speed;
+}
+
+void RuntimeStartup(){
+    RTC_init(); //Starts counter
+    fan_memory();   //reads stored fan runtime from eeprom
 }
