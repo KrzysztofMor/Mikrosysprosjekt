@@ -25,7 +25,7 @@
 #define DIR_READ 1
 #define DIR_WRITE 0
 
-//i2c
+//i2c//
 
 #define TWI_IS_CLOCKHELD() TWI0.MSTATUS & TWI_CLKHOLD_bm
 #define TWI_IS_BUSERR() TWI0.MSTATUS & TWI_BUSERR_bm
