@@ -535,9 +535,9 @@ void menu_auto(const char* command){
 
 void PWM(){
     //Pinout
-    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Setter PD0, PD1 og PD2 som utganger
-    PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm;// Setter PC6, PC5 og PC4 som utganger
-    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // Slår på PWM-output på Port D og C
+    PORTD.DIRSET = PIN0_bm | PIN1_bm | PIN2_bm; // Enabling PD0, PD1 and PD2 as outputs
+    PORTC.DIRSET = PIN6_bm | PIN5_bm | PIN4_bm;// Enabling PC6, PC5 and PC4 as outputs
+    PORTMUX.TCAROUTEA = PORTMUX_TCA0_PORTD_gc | PORTMUX_TCA1_PORTC_gc; // Enabling PWM output on Port D and C.
     TCA0.SINGLE.PER = 0x9F;
     TCA1.SINGLE.PER = 0x9F;
     
@@ -559,13 +559,11 @@ void RuntimeStartup(){
 
 
 static void TWI0_M_init(void) {
-	
+	//pinout
 	 PORTA.DIRSET = PIN2_bm | PIN3_bm;
 	 PORTA.PINCONFIG = PORT_PULLUPEN_bm;
 	 PORTA.PINCTRLUPD = PIN2_bm | PIN3_bm;
-	
-	//TWI0.CTRLA = TWI_SDAHOLD_50NS_gc; //Setting hold time to 50 NS.
-	
+		
 	TWI0.MCTRLA = TWI_ENABLE_bm; //Enable TWI/I2C as controller.
 	
 	TWI0.MBAUD	= (uint8_t)TWI0_BAUD(I2C_SCL_FREQ,0); //Configure TWI baud rate.
@@ -573,11 +571,7 @@ static void TWI0_M_init(void) {
 	TWI0.MSTATUS = TWI_BUSSTATE_IDLE_gc; //Setting the I2C bus to idle.
 }
 
-/**
- * @brief This function initiates a data transfer with the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param dir Specifies direction of transfer. 1 is read, 0 is write.
- */
+
 static void I2C0_M_start(uint8_t addr, uint8_t dir) {
 	
 	/*Specify read or write of client */
@@ -586,11 +580,7 @@ static void I2C0_M_start(uint8_t addr, uint8_t dir) {
 	TWI_WAIT();
 }
 
-/**
- * @brief This function writes one byte to the device on the specified address.
- * @param addr The address of the device on the bus.
- * @param data The byte to be written.
- */
+ //Fuction writes one byte to the specified device
 static void I2C_M_write(uint8_t addr, uint8_t data) {
 	
 	I2C0_M_start(addr, DIR_WRITE);
@@ -615,6 +605,7 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
  * @param data Pointer to data array. 
  * @param len The number of bytes to be read.
  */
+ //Function reads len bytes to the device 
 static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
 	I2C0_M_start(addr, DIR_READ);
 	uint8_t byte_count = 0;
