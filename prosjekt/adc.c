@@ -1,5 +1,5 @@
 /*
-*  adc0 pin6
+*  ADC0
 *
 *  created: 14.04.23
 *  Author: Erik Gilberg
@@ -10,30 +10,33 @@ void ADC0_init(uint8_t port);
 uint16_t ADC0_read(void);
 void ADC0_channels(uint8_t port);
 
+//Initialise ADC to read analog input signal
 void ADC0_init(uint8_t port){
-    /* Disable digital input buffer */
     ADC0_channels(port);
     ADC0.CTRLC = ADC_PRESC_DIV4_gc | VREF_REFSEL_VDD_gc;   //CLK_PER divided by 4 | Internal referance
     ADC0.CTRLA = ADC_ENABLE_bm | ADC_RESSEL_10BIT_gc;      //ADC Enable: enabled | 10-bit mode 
 }
     
-
+//Enable reading on interrupts, and returns saved value
 uint16_t ADC0_read(void) {
-    ADC0.COMMAND = ADC_STCONV_bm;   //Start ADC conversion
-    while(!(ADC0.INTFLAGS & ADC_RESRDY_bm)) {
+    ADC0.COMMAND = ADC_STCONV_bm;                       //Start ADC conversion
+    while(!(ADC0.INTFLAGS & ADC_RESRDY_bm)) {           //waiting until conversion is complete
         ;
     }
-    ADC0.INTFLAGS = ADC_RESRDY_bm;
-    return ADC0.RES; 
+    ADC0.INTFLAGS = ADC_RESRDY_bm;                      //clears the interupt flag after red
+    return ADC0.RES;                                    //returns conversion
 }
 
+//////////////////used within c file/////////////////////////////
+
+//Connects ADC reading to selected port
 void ADC0_channels(uint8_t port){
     switch(port){
         case 0:
-        PORTE.PIN0CTRL &= ~PORT_ISC_gm;
-        PORTE.PIN0CTRL |= PORT_ISC_INPUT_DISABLE_gc;
-        PORTE.PIN0CTRL &= ~PORT_PULLUPEN_bm;    
-        ADC0.MUXPOS = ADC_MUXPOS_AIN0_gc;
+        PORTE.PIN0CTRL &= ~PORT_ISC_gm;                 //clears the Interrupt Sense Control (ISC) bits
+        PORTE.PIN0CTRL |= PORT_ISC_INPUT_DISABLE_gc;    //Digital input buffer disabled
+        PORTE.PIN0CTRL &= ~PORT_PULLUPEN_bm;            //clears input pullup resistor
+        ADC0.MUXPOS = ADC_MUXPOS_AIN0_gc;               //Directing mux position to right analog input pin
         break;
         
         case 1:
