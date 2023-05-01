@@ -589,13 +589,13 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
 	
 	TWI_WAIT();
 	
-	/*Check for NACK*/
+	//Check for NACK
 	if(TWI0.MSTATUS & TWI_RXACK_bm) {
 		//target is full
 		printf("target NACK\n");
 	}
 	
-	/*Issue a stop condition*/
+	//Issue a stop condition
 	TWI0.MCTRLB |= TWI_MCMD_STOP_gc;
 }
 
@@ -607,22 +607,28 @@ static void I2C_M_write(uint8_t addr, uint8_t data) {
  */
  //Function reads len bytes to the device 
 static void I2C_M_read(uint8_t addr, uint8_t* data, uint8_t len) {
+//Starting the I2C tranasaction for reading data from the specified adress
 	I2C0_M_start(addr, DIR_READ);
+	
+	//Initializing byte counter
 	uint8_t byte_count = 0;
     
+	//Loop until all bytes requested are read
 	while(byte_count < len) {
 		TWI_WAIT();
 		
+		//Read data byte and store it in the data array
 		data[byte_count] = TWI0.MDATA;
 		
 		byte_count++;
 		
+		//If all bytes aren't read, send an ACK and continue reading
 		if(byte_count != len) {
 			TWI0.MCTRLB = TWI_ACKACT_ACK_gc 
 						| TWI_MCMD_RECVTRANS_gc;
 		}
 	}
-	/*Finish transaction with a NACK and stop condition */
+	// Finish transaction with a NACK and stop condition
 	TWI0.MCTRLB = TWI_ACKACT_NACK_gc | TWI_MCMD_STOP_gc;
      
 }
