@@ -34,7 +34,10 @@ void readRPM_init(){
     TCB0.CTRLA = TCB_CLKSEL_DIV1_gc | TCB_ENABLE_bm;  	//clockspeed internal clock | 
 }
 
-//save values from TCB caption, and calculates RPM.
+/*
+ readRPM stores TCB values and calculate the speed in RPM. To compensate for 
+ noise peaks shortperiod ensure that a period duration is right.
+ */
 uint32_t readRPM(){
     uint32_t rpm;	
     //while(1){
@@ -57,7 +60,11 @@ uint32_t readRPM(){
     return rpm;
 }
 
-//choose which pin should be connected to TCB, through eventsystem channel0 
+/*
+ RPMpin connect TCB channel to the right port with use of event system.
+ To capture readings from different fans, event system can direct TCB counter
+ to different ports that are supported by TCB. 
+ */
 void RPMpin(uint32_t pin){
     // EVSYS(pin -> TCB0 & TCB1 CAPT)
     switch(pin){
@@ -94,8 +101,11 @@ void RPMpin(uint32_t pin){
     EVSYS.USERTCB0CAPT = EVSYS_USER_CHANNEL0_gc; 
 }
 
-
-//compare dutycycles on outsignal with return signal. Commented because it doesn't work 
+/*
+ compare_RPM use counted PWM and compare with the output PWM signal. 
+ If a fan stops or run poorly, this prosent value will indicate that. 
+ Commented because it doesn't work 
+ */
 uint32_t compare_PWM(uint32_t TCA_CMP){
     float read_Dutycycle = 1 - (float)(p_Duty)/(float)(p_Duty+n_Duty);  //((float)p_Duty/(float)period);
     float write_Dutycycle = ((float)TCA_CMP/159.0); //(float)readRPM()/(float)returnRPMfromPWM();//(float)n_Duty/(float)period;
